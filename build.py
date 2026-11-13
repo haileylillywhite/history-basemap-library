@@ -3,7 +3,7 @@
 
 Source: https://github.com/aourednik/historical-basemaps (GPL-3.0).
 The output of this script is the public library. Coordinates are not copied
-into the LearnWhale repository.
+into the LearnWhale repository. Rings keep every source vertex.
 """
 
 from __future__ import annotations
@@ -42,32 +42,6 @@ def download(name: str) -> dict:
     return json.loads(cache.read_text())
 
 
-def perpendicular(point, start, end) -> float:
-    px, py = point
-    ax, ay = start
-    bx, by = end
-    dx, dy = bx - ax, by - ay
-    if dx == 0 and dy == 0:
-        return ((px - ax) ** 2 + (py - ay) ** 2) ** 0.5
-    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)))
-    qx, qy = ax + t * dx, ay + t * dy
-    return ((px - qx) ** 2 + (py - qy) ** 2) ** 0.5
-
-
-def rdp(points: list[list[float]], epsilon: float) -> list[list[float]]:
-    if len(points) < 3:
-        return points
-    start, end = points[0], points[-1]
-    index, distance = 0, 0.0
-    for cursor, point in enumerate(points[1:-1], start=1):
-        span = perpendicular(point, start, end)
-        if span > distance:
-            index, distance = cursor, span
-    if distance <= epsilon:
-        return [start, end]
-    return rdp(points[: index + 1], epsilon)[:-1] + rdp(points[index:], epsilon)
-
-
 def outers(geometry: dict) -> list[list[list[float]]]:
     kind = geometry["type"]
     coords = geometry["coordinates"]
@@ -80,8 +54,6 @@ def outers(geometry: dict) -> list[list[list[float]]]:
     rings: list[list[list[float]]] = []
     for polygon in polygons:
         outer = [[round(point[0], 5), round(point[1], 5)] for point in polygon[0]]
-        if len(outer) > 250:
-            outer = [[round(point[0], 5), round(point[1], 5)] for point in rdp(outer, 0.04)]
         if len(outer) >= 4:
             if outer[0] != outer[-1]:
                 outer.append(outer[0])
